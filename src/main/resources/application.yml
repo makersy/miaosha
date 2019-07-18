@@ -1,0 +1,98 @@
+# application.yml
+
+spring:
+ # thymeleaf
+ thymeleaf:
+   prefix: classpath:/templates/
+   suffix: .html
+   cache: false
+   content-type: text/html
+   enabled: true
+   encoding: UTF-8
+   mode: HTML5
+
+ # static
+ resources:
+   add-mappings: true # 启用静态资源处理
+#   cache-period: 3600
+   chain:
+     cache: true # 查询链的缓存
+     enabled: true
+     gzipped: true # 对静态页面压缩
+     html-application-cache: true
+   static-locations: classpath:/static/
+   cache-period: 3600  # 客户端缓存静态资源的时间
+
+ jackson:
+   time-zone: GMT+8
+   date-format: yyyy-MM-dd HH:mm:ss
+
+ # druid
+ datasource:
+   type: com.alibaba.druid.pool.DruidDataSource
+   filters: stat
+   url: jdbc:mysql://localhost:3306/miaosha?useUnicode=true&characterEncoding=utf-8&allowMultiQueries=true&useSSL=false&serverTimezone=GMT%2B8
+   username: makers
+   password: 111
+   driver-class-name: com.mysql.cj.jdbc.Driver
+   druid:
+     test-while-idle: true
+     filters: stat
+     initialSize: 100
+     minIdle: 500
+     maxActive: 1000
+     maxWait: 60000
+     timeBetweenEvictionRunsMillis: 60000
+     minEvictableIdleTimeMillis: 300000
+     validationQuery: select 'x'
+     pool-prepared-statements: true
+     test-on-borrow: true
+     test-on-return: false
+     max-open-prepared-statements: 20
+
+ # redis
+ redis:
+   host: 127.0.0.1
+   port: 6379
+   timeout: 10
+   # password: 123
+   pool:
+     minIdle: 100
+     maxIdle: 500
+     maxWait: 500
+     maxActive: 1000
+
+ # rabbitmq
+ rabbitmq:
+   host: 47.101.181.184
+   port: 5672
+   username: test
+   password: test
+   virtual-host: /
+   listener:
+     simple:
+       concurrency: 10  # 消费者数量
+       max-concurrency: 10
+       prefetch: 1  # 每次从队列中取的个数
+       auto-startup: true
+       default-requeue-rejected: true
+   template:
+     retry:
+       enabled: true # 启用重试
+       initial-interval: 1000 # 初始重置间隔
+       max-attempts: 3 # 最大重试3次
+       max-interval: 10000 # 最大重试间隔
+       multiplier: 1.0
+
+# mybatis
+mybatis:
+  typeAliasesPackage: com.makersy.domain
+  configuration:
+    defaultFetchSize: 100
+    defaultStatementTimeout: 3000
+    map-underscore-to-camel-case: true
+  mapperLocations: classpath:com/makersy/dao/*.xml
+
+
+
+
