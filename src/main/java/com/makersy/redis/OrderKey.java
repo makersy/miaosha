@@ -10,6 +10,9 @@ public class OrderKey extends BasePrefix{
         super(prefix);
     }
 
-    public static OrderKey getMiaoshaOrderByUidGid = new OrderKey("moug");  //miaosha order uid gid
+    /**
+     * miaosha order uid gid
+     */
+    public static OrderKey getMiaoshaOrderByUidGid = new OrderKey("moug");
 
 }

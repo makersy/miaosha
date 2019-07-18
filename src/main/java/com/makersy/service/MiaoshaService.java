@@ -13,6 +13,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 
 @Service
 @EnableTransactionManagement
@@ -63,5 +65,10 @@ public class MiaoshaService {
 
 	private boolean getGoodsOver(long goodsId) {
 		return redisService.exists(MiaoshaKey.isGoodsOver, "" + goodsId);
+	}
+
+	public void reset(List<GoodsVo> goodsList) {
+		goodsService.resetStock(goodsList);
+		orderService.deleteOrders();
 	}
 }

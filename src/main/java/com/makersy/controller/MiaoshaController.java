@@ -6,6 +6,8 @@ import com.makersy.domain.OrderInfo;
 import com.makersy.rabbitmq.MQSender;
 import com.makersy.rabbitmq.MiaoshaMessage;
 import com.makersy.redis.GoodsKey;
+import com.makersy.redis.MiaoshaKey;
+import com.makersy.redis.OrderKey;
 import com.makersy.redis.RedisService;
 import com.makersy.result.CodeMsg;
 import com.makersy.result.Result;
@@ -24,7 +26,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by makersy on 2019
@@ -54,9 +58,12 @@ public class MiaoshaController implements InitializingBean {
     @Autowired
     MQSender sender;
 
+    // 标记某 id 商品秒杀是否结束
+    private Map<Long, Boolean> localOverMap = new HashMap<>();
 
     /**
-     * 继承 InitializingBean 来实现此方法。其会在系统初始化时调用。系统初始化时加载商品数量
+     * 系统初始化。需要继承 InitializingBean 来实现此方法。其会在系统初始化时调用。
+     * 目的：redis中加载商品数量，更新商品的秒杀结束标志。
      */
     @Override
     public void afterPropertiesSet() throws Exception {
@@ -68,13 +75,35 @@ public class MiaoshaController implements InitializingBean {
         //加载每个商品的数量到缓存
         for (GoodsVo goodsVo : goodsVoList) {
             redisService.set(GoodsKey.getMiaoshaGoodsStock, "" + goodsVo.getId(), goodsVo.getStockCount());
+            //
+            localOverMap.put(goodsVo.getId(), false);
         }
+    }
+
+    @RequestMapping(value="/reset", method=RequestMethod.GET)
+    @ResponseBody
+    public Result<Boolean> reset(Model model) {
+        List<GoodsVo> goodsList = goodsService.listGoodsVo();
+        for(GoodsVo goods : goodsList) {
+            goods.setStockCount(10);
+            redisService.set(GoodsKey.getMiaoshaGoodsStock, ""+goods.getId(), 10);
+            localOverMap.put(goods.getId(), false);
+        }
+        redisService.delete(OrderKey.getMiaoshaOrderByUidGid);
+        redisService.delete(MiaoshaKey.isGoodsOver);
+        miaoshaService.reset(goodsList);
+        return Result.success(true);
     }
 
     /**
      * GET/POST区别：
      * get具有幂等性，代表从服务端获取数据，无论获取多少次，结果都没有变化，对服务端的数据也没有任何影响
      * post不具有幂等性，代表向服务端提交数据
+     */
+    /**
+     * 1. QPS: 1220.7/sec  win idea
+     *    5000 * 10
+     *
      */
     @RequestMapping(value = "/do_miaosha", method = RequestMethod.POST)
     @ResponseBody
@@ -86,9 +115,19 @@ public class MiaoshaController implements InitializingBean {
             return Result.error(CodeMsg.SESSION_ERROR);
         }
 
+        /*
+        用来对 redis 进行优化，当商品已经秒杀完后，对应“秒杀结束”状态值变为 true，此时直接返回失败，
+        不会再进行查询 redis，以及入队操作
+         */
+        boolean over = localOverMap.get(goodsId);
+        if (over) {
+            return Result.error(CodeMsg.MIAOSHA_OVER);
+        }
+
         //预减库存
         long stock = redisService.decr(GoodsKey.getMiaoshaGoodsStock, "" + goodsId);
         if (stock < 0) {
+            localOverMap.replace(goodsId, true);
             return Result.error(CodeMsg.MIAOSHA_OVER);
         }
 
