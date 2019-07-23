@@ -6,9 +6,15 @@ package com.makersy.redis;
 
 public class MiaoshaKey extends BasePrefix{
 
-    public static MiaoshaKey isGoodsOver = new MiaoshaKey("go");
+    public static MiaoshaKey isGoodsOver = new MiaoshaKey(0, "go");
+    public static MiaoshaKey getMiaoshaPath = new MiaoshaKey(60, "mp");
 
-    private MiaoshaKey(String prefix) {
-        super(prefix);
+    /**
+     * 验证码
+     */
+    public static MiaoshaKey getMiaoshaVerifyCode = new MiaoshaKey(300, "mv");
+
+    private MiaoshaKey(int expireSeconds, String prefix) {
+        super(expireSeconds, prefix);
     }
 }

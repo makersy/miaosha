@@ -1,20 +1,20 @@
 package com.makersy.controller;
 
+import com.makersy.access.AccessLimit;
 import com.makersy.domain.MiaoshaOrder;
 import com.makersy.domain.MiaoshaUser;
 import com.makersy.domain.OrderInfo;
 import com.makersy.rabbitmq.MQSender;
 import com.makersy.rabbitmq.MiaoshaMessage;
-import com.makersy.redis.GoodsKey;
-import com.makersy.redis.MiaoshaKey;
-import com.makersy.redis.OrderKey;
-import com.makersy.redis.RedisService;
+import com.makersy.redis.*;
 import com.makersy.result.CodeMsg;
 import com.makersy.result.Result;
 import com.makersy.service.GoodsService;
 import com.makersy.service.MiaoshaService;
 import com.makersy.service.MiaoshaUserService;
 import com.makersy.service.OrderService;
+import com.makersy.utils.MD5Util;
+import com.makersy.utils.UUIDUtil;
 import com.makersy.vo.GoodsVo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,6 +26,12 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import javax.imageio.ImageIO;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -105,14 +111,20 @@ public class MiaoshaController implements InitializingBean {
      *    5000 * 10
      *
      */
-    @RequestMapping(value = "/do_miaosha", method = RequestMethod.POST)
+    @RequestMapping(value = "/{path}/do_miaosha", method = RequestMethod.POST)
     @ResponseBody
-    public Result<Integer> miaosha(Model model, MiaoshaUser user, @RequestParam("goodsId")long goodsId) {
+    public Result<Integer> miaosha(Model model, MiaoshaUser user, @RequestParam("goodsId")long goodsId, @PathVariable("path")String path) {
         //model中设置user对象
         model.addAttribute("user", user);
 
         if (user == null) {
             return Result.error(CodeMsg.SESSION_ERROR);
+        }
+
+        //验证path
+        boolean check = miaoshaService.checkPath(user, goodsId, path);
+        if (!check) {
+            return Result.error(CodeMsg.REQUEST_ILLEGEL);
         }
 
         /*
@@ -171,10 +183,36 @@ public class MiaoshaController implements InitializingBean {
         */
     }
 
+    @AccessLimit(seconds = 5, maxCount = 5, needLogin = true)
+    @RequestMapping(value = "/path", method = RequestMethod.GET)
+    @ResponseBody
+    public Result<String> getMiaoshaPath(HttpServletRequest request, MiaoshaUser user,
+                                         @RequestParam("goodsId")long goodsId,
+                                         @RequestParam(value = "verifyCode", defaultValue = "0")int verifyCode){
+        if (user == null) {
+            return Result.error(CodeMsg.SESSION_ERROR);
+        }
+
+        //查询访问的次数
+        String uri = request.getRequestURI();
+        String key = uri + "_" + user.getId();
+
+        //检验验证码
+        boolean check = miaoshaService.checkVerifyCode(user, goodsId, verifyCode);
+        if (!check) {
+            return Result.error(CodeMsg.REQUEST_ILLEGEL);
+        }
+
+        //生成路径
+        String path = miaoshaService.createMiaoshaPath(user, goodsId);
+        return Result.success(path);
+    }
+
+
     /**
-    orderId : 成功
-    -1 : 秒杀失败
-    0 : 排队中
+        orderId : 成功
+        -1 : 秒杀失败
+        0 : 排队中
      */
     @RequestMapping(value = "/result", method = RequestMethod.GET)
     @ResponseBody
@@ -188,4 +226,28 @@ public class MiaoshaController implements InitializingBean {
         long result = miaoshaService.getMiaoshaResult(user.getId(), goodsId);
         return Result.success(result);
     }
+
+    @RequestMapping(value = "/verifyCode", method = RequestMethod.GET)
+    @ResponseBody
+    public Result<Long> getMiaoshaVerifyCode(HttpServletResponse response, Model model, MiaoshaUser user, @RequestParam("goodsId")long goodsId) {
+        //model中设置user对象
+        model.addAttribute("user", user);
+
+        if (user == null) {
+            return Result.error(CodeMsg.SESSION_ERROR);
+        }
+
+        BufferedImage image = miaoshaService.createVerifyCode(user, goodsId);
+        try {
+            OutputStream out = response.getOutputStream();
+            ImageIO.write(image, "JPEG", out);
+            out.flush();
+            out.close();
+            return null;
+        } catch (IOException e) {
+            return Result.error(CodeMsg.MIAOSHA_FAIL);
+        }
+    }
+
+
 }
