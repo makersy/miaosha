@@ -17,7 +17,9 @@ import org.springframework.web.bind.annotation.ResponseBody;
 @ResponseBody
 public class GlobalExceptionHandler {
 
-	//拦截异常
+	/**
+	 * 	拦截异常
+	 */
 	@ExceptionHandler(value=Exception.class)
 	public Result<String> exceptionHandler(HttpServletRequest request, Exception e){
 		e.printStackTrace();

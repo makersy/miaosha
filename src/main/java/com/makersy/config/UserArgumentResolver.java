@@ -34,7 +34,7 @@ public class UserArgumentResolver implements HandlerMethodArgumentResolver {
     @Override
     public boolean supportsParameter(MethodParameter parameter) {
         Class<?> clazz = parameter.getParameterType();
-        return clazz== MiaoshaUser.class;
+        return clazz == MiaoshaUser.class;
     }
 
     //获取user对象

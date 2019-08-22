@@ -64,7 +64,10 @@ public class MiaoshaController implements InitializingBean {
     @Autowired
     MQSender sender;
 
-    // 标记某 id 商品秒杀是否结束
+    /**
+     * 标记商品秒杀是否结束 key：商品id，value：是否结束
+     * 需要注意，controller不保存状态
+     */
     private Map<Long, Boolean> localOverMap = new HashMap<>();
 
     /**
@@ -101,7 +104,7 @@ public class MiaoshaController implements InitializingBean {
         return Result.success(true);
     }
 
-    /**
+    /*
      * GET/POST区别：
      * get具有幂等性，代表从服务端获取数据，无论获取多少次，结果都没有变化，对服务端的数据也没有任何影响
      * post不具有幂等性，代表向服务端提交数据
@@ -127,7 +130,7 @@ public class MiaoshaController implements InitializingBean {
             return Result.error(CodeMsg.REQUEST_ILLEGEL);
         }
 
-        /*
+        /* 内存标记，减少redis访问，防止请求过多时每次都访问一下redis
         用来对 redis 进行优化，当商品已经秒杀完后，对应“秒杀结束”状态值变为 true，此时直接返回失败，
         不会再进行查询 redis，以及入队操作
          */
@@ -143,7 +146,7 @@ public class MiaoshaController implements InitializingBean {
             return Result.error(CodeMsg.MIAOSHA_OVER);
         }
 
-        //判断是否已经秒杀到
+        //判断是否已经秒杀到，解决一个用户秒杀到两个商品的问题
         MiaoshaOrder order = orderService.getMiaoshaOrderByUserIdGoodsId(user.getId(), goodsId);
         if (order != null) {
             return Result.error(CodeMsg.REPEATE_MIAOSHA);
@@ -154,10 +157,10 @@ public class MiaoshaController implements InitializingBean {
         mm.setUser(user);
         mm.setGoodsId(goodsId);
         sender.sendMiaoshaMessage(mm);
+
         //排队中
         return Result.success(0);
 
-        //todo 要解决一个用户秒杀到两个商品的问题
         /*
         //判断商品是否还有库存
         GoodsVo goods = goodsService.getGoodsVoByGoodsId(goodsId);

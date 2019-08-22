@@ -37,6 +37,10 @@ public class GoodsService {
         }
     }
 
+    /**
+     * 数据库减库存
+     * @param goodsList
+     */
     public void resetStock(List<GoodsVo> goodsList) {
         for(GoodsVo goods : goodsList ) {
             MiaoshaGoods g = new MiaoshaGoods();

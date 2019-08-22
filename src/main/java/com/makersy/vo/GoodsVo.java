@@ -8,11 +8,12 @@ import java.util.Date;
 
 /**
  * Created by makersy on 2019
+ *
+ * 同时包含商品信息和秒杀信息
  */
 
 @Getter
 @Setter
-//同时包含商品信息和秒杀信息
 public class GoodsVo extends Goods {
 
     private Double miaoshaPrice;
@@ -24,3 +25,4 @@ public class GoodsVo extends Goods {
     private Date endDate;
 
 }
+

@@ -58,7 +58,7 @@ public class MQReciver {
             return;
         }
 
-        //减库存，下订单，写入秒杀订单
+        //减库存，生成订单，向缓存中写入秒杀订单
         miaoshaService.miaosha(user, goods);
 
     }

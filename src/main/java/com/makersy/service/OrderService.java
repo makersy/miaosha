@@ -30,13 +30,16 @@ public class OrderService {
     @Autowired
     private OrderDao orderDao;
 
-    //从缓存获取秒杀订单
+    /**
+     * 从缓存获取秒杀订单
+     */
     public MiaoshaOrder getMiaoshaOrderByUserIdGoodsId(long id, long goodsId) {
-//        return orderDao.getMiaoshaOrderByUserIdGoodsId(id, goodsId);
         return redisService.get(OrderKey.getMiaoshaOrderByUidGid, id + "_" + goodsId, MiaoshaOrder.class);
     }
 
-    //通过orderId获取订单信息
+    /**
+     * 通过orderId获取订单详情
+     */
     public OrderInfo getOrderById(long orderId) {
         return orderDao.getOrderById(orderId);
     }
@@ -45,7 +48,7 @@ public class OrderService {
      * 下订单，写入秒杀订单
      * @param user
      * @param goods
-     * @return 返回订单信息
+     * @return 订单信息
      */
     @Transactional
     public OrderInfo createOrder(MiaoshaUser user, GoodsVo goods) {
@@ -58,13 +61,14 @@ public class OrderService {
         orderInfo.setGoodsName(goods.getGoodsName());
         orderInfo.setGoodsPrice(goods.getMiaoshaPrice());
         orderInfo.setOrderChannel(1);
-        orderInfo.setStatus(0);  //todo 最好用枚举，新建未支付
+        //todo 最好用枚举，新建未支付
+        orderInfo.setStatus(0);
         orderInfo.setUserId(user.getId());
 
         //写入订单
         orderDao.insert(orderInfo);
 
-        //写入秒杀订单进缓存
+        //将秒杀订单写入缓存
         MiaoshaOrder miaoshaOrder = new MiaoshaOrder();
         miaoshaOrder.setGoodsId(goods.getId());
         miaoshaOrder.setOrderId(orderInfo.getId());

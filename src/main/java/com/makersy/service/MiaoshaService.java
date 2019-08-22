@@ -38,10 +38,11 @@ public class MiaoshaService {
 	@Autowired
 	private RedisService redisService;
 
-	@Transactional
+	@Transactional(rollbackFor = Exception.class)
 	public OrderInfo miaosha(MiaoshaUser user, GoodsVo goods) {
 		//减库存
 		boolean success = goodsService.reduceStock(goods);
+
 		//生成并写入订单，返回生成的订单信息
 		if (success) {
 			return orderService.createOrder(user, goods);
@@ -53,16 +54,18 @@ public class MiaoshaService {
 
 	public long getMiaoshaResult(Long userId, long goodsId) {
 		MiaoshaOrder order = orderService.getMiaoshaOrderByUserIdGoodsId(userId, goodsId);
-		if (order != null) {  //秒杀成功
+		if (order != null) {
+		    //秒杀成功
 			return order.getOrderId();
 		} else {
 			boolean isOver = getGoodsOver(goodsId);
-			if (isOver) {  //卖完了
+			if (isOver) {
+			    //卖完了
 				return -1;
 			} else {
+			    //没卖完但是订单尚未生成。让客户端继续等待
 				return 0;
 			}
-
 		}
 	}
 

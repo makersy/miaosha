@@ -5,10 +5,10 @@ import org.apache.commons.lang3.StringUtils;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * Created by makersy on 2019
- */
 
+/**
+ * 工具类：判断一段字符串是不是手机号
+ */
 public class ValidatorUtil {
     private static final Pattern mobile_pattern = Pattern.compile("1\\d{10}");
 
