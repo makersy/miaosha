@@ -26,7 +26,7 @@ import java.nio.charset.StandardCharsets;
 /**
  * @author yhl
  * @date 2019/7/23
- *
+ * <p>
  * 接口限制拦截器，需要作用于业务代码之前来防止短时间大量刷接口
  */
 
@@ -97,7 +97,7 @@ public class AccessInterceptor extends HandlerInterceptorAdapter {
             return null;
         }
         String token = StringUtils.isEmpty(paramToken) ? cookieToken : paramToken;
-        return userService.getByToken(response,token);
+        return userService.getByToken(response, token);
     }
 
     /**
@@ -105,7 +105,7 @@ public class AccessInterceptor extends HandlerInterceptorAdapter {
      */
     private String getCookieValue(HttpServletRequest request, String cookieName) {
         Cookie[] cookies = request.getCookies();
-        if( cookies==null || cookies.length<=0 ) {
+        if (cookies == null || cookies.length <= 0) {
             return null;
         }
         for (Cookie cookie : cookies) {

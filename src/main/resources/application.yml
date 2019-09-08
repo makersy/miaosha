@@ -13,7 +13,7 @@ spring:
 
  # static
  resources:
-   add-mappings: true # 启用静态资源处理
+   add-mappings: true # 开启默认的资源处理
 #   cache-period: 3600
    chain:
      cache: true # 查询链的缓存
@@ -21,7 +21,7 @@ spring:
      gzipped: true # 对静态页面压缩
      html-application-cache: true
    static-locations: classpath:/static/
-   cache-period: 3600  # 客户端缓存静态资源的时间
+   cache-period: 3600  # 客户端缓存静态资源的时间，资源的缓存时效，以秒为单位.
 
  jackson:
    time-zone: GMT+8

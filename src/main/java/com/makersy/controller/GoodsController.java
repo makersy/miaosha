@@ -94,15 +94,24 @@ public class GoodsController {
         return html;
     }
 
-    @RequestMapping(value="/to_detail2/{goodsId}",produces="text/html")
+    /**
+     * 秒杀商品详情
+     * @param request
+     * @param response
+     * @param model
+     * @param user
+     * @param goodsId
+     * @return
+     */
+    @RequestMapping(value = "/to_detail2/{goodsId}", produces = "text/html")
     @ResponseBody
-    public String detail2(HttpServletRequest request, HttpServletResponse response, Model model,MiaoshaUser user,
-                          @PathVariable("goodsId")long goodsId) {
+    public String detail2(HttpServletRequest request, HttpServletResponse response, Model model, MiaoshaUser user,
+                          @PathVariable("goodsId") long goodsId) {
         model.addAttribute("user", user);
 
         //取缓存
-        String html = redisService.get(GoodsKey.getGoodsDetail, ""+goodsId, String.class);
-        if(!StringUtils.isEmpty(html)) {
+        String html = redisService.get(GoodsKey.getGoodsDetail, "" + goodsId, String.class);
+        if (!StringUtils.isEmpty(html)) {
             return html;
         }
         //手动渲染
@@ -115,13 +124,13 @@ public class GoodsController {
 
         int miaoshaStatus = 0;
         int remainSeconds = 0;
-        if(now < startAt ) {//秒杀还没开始，倒计时
+        if (now < startAt) {//秒杀还没开始，倒计时
             miaoshaStatus = 0;
-            remainSeconds = (int)((startAt - now )/1000);
-        }else  if(now > endAt){//秒杀已经结束
+            remainSeconds = (int) ((startAt - now) / 1000);
+        } else if (now > endAt) {//秒杀已经结束
             miaoshaStatus = 2;
             remainSeconds = -1;
-        }else {//秒杀进行中
+        } else {//秒杀进行中
             miaoshaStatus = 1;
             remainSeconds = 0;
         }
@@ -129,41 +138,43 @@ public class GoodsController {
         model.addAttribute("remainSeconds", remainSeconds);
 //        return "goods_detail";
 
-        SpringWebContext ctx = new SpringWebContext(request,response,
-                request.getServletContext(),request.getLocale(), model.asMap(), applicationContext );
+        SpringWebContext ctx = new SpringWebContext(request, response,
+                request.getServletContext(), request.getLocale(), model.asMap(), applicationContext);
         html = thymeleafViewResolver.getTemplateEngine().process("goods_detail", ctx);
-        if(!StringUtils.isEmpty(html)) {
-            redisService.set(GoodsKey.getGoodsDetail, ""+goodsId, html);
+        if (!StringUtils.isEmpty(html)) {
+            //URL缓存：因为商品id是放在url里，所以管他叫url缓存
+            redisService.set(GoodsKey.getGoodsDetail, "" + goodsId, html);
         }
         return html;
     }
 
     /**
-     * 页面静态化
+     * 页面静态化，只通过ajax请求与后端进行数据交互，其他静态数据均缓存在浏览器
+     *
      * @param request
      * @param response
      * @param user
      * @param goodsId
      * @return
      */
-    @RequestMapping(value="/detail/{goodsId}")
+    @RequestMapping(value = "/detail/{goodsId}")
     @ResponseBody
-    public Result<GoodsDetailVo> detail(HttpServletRequest request, HttpServletResponse response, MiaoshaUser user, @PathVariable("goodsId")long goodsId) {
+    public Result<GoodsDetailVo> detail(HttpServletRequest request, HttpServletResponse response, MiaoshaUser user, @PathVariable("goodsId") long goodsId) {
         GoodsVo goods = goodsService.getGoodsVoByGoodsId(goodsId);
         long startAt = goods.getStartDate().getTime();
         long endAt = goods.getEndDate().getTime();
         long now = System.currentTimeMillis();
         int miaoshaStatus = 0;
         int remainSeconds = 0;
-        if(now < startAt ) {
+        if (now < startAt) {
             //秒杀还没开始，倒计时
             miaoshaStatus = 0;
-            remainSeconds = (int)((startAt - now )/1000);
-        }else  if(now > endAt){
+            remainSeconds = (int) ((startAt - now) / 1000);
+        } else if (now > endAt) {
             //秒杀已经结束
             miaoshaStatus = 2;
             remainSeconds = -1;
-        }else {
+        } else {
             //秒杀进行中
             miaoshaStatus = 1;
             remainSeconds = 0;
